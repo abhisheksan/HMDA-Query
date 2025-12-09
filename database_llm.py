@@ -22,52 +22,94 @@ def load_schema():
 def generate_sql(llm, schema, question):
     """Use LLM to generate SQL query from natural language question"""
 
-    prompt = f"""You are a SQL expert. Given the following database schema, write a SQL SELECT query to answer the user's question.
+    # Extract minimal schema info from the actual schema file
+    tables_info = []
+    current_table = None
 
-Database Schema:
-{schema}
+    for line in schema.split('\n'):
+        if 'CREATE TABLE' in line:
+            table_name = line.split('CREATE TABLE')[1].split('(')[0].strip()
+            current_table = table_name
+            tables_info.append(f"{table_name}:")
+        elif current_table and any(dtype in line for dtype in ['INTEGER', 'TEXT', 'SMALLINT', 'DECIMAL']):
+            col = line.strip().split()[0].strip().strip(',')
+            if col and not col.startswith('--') and col.lower() not in ['primary', 'foreign', 'references', 'not', 'unique']:
+                tables_info.append(f"  {col}")
+        elif ');' in line:
+            current_table = None
 
-IMPORTANT NOTES:
-- The application table has numeric codes (e.g., owner_occupancy is a SMALLINT code)
-- To get human-readable names, JOIN with the lookup tables (e.g., owner_occupancy table has owner_occupancy_name)
-- Do NOT use placeholders like ? or parameters - write complete SQL queries with actual values
-- loan_amount_000s and applicant_income_000s are already in thousands of dollars - do NOT multiply them
-- For "owner occupied", join with owner_occupancy table and check owner_occupancy_name
+    # Take only first 80 lines to keep it small
+    schema_summary = '\n'.join(tables_info[:80])
 
-Example for owner occupied query:
-SELECT AVG(applicant_income_000s) FROM application a
-JOIN owner_occupancy o ON a.owner_occupancy = o.owner_occupancy
-WHERE o.owner_occupancy_name LIKE '%Owner-occupied%'
+    # Use Phi-3 instruct format
+    prompt = f"""<|system|>
+You are a SQL expert. Convert questions to PostgreSQL SELECT queries.
 
-Example for loan vs income comparison:
-SELECT COUNT(*) FROM application WHERE loan_amount_000s > applicant_income_000s
+Schema:
+{schema_summary}
 
-User Question: {question}
+Key relationships:
+- application.loan_type joins to loan_type.loan_type (both SMALLINT)
+- application.property_type joins to property_type.property_type (both SMALLINT)
+- application.owner_occupancy joins to owner_occupancy.owner_occupancy (both SMALLINT)
+- application.denial_reason_1 joins to denial_reason.denial_reason_code (both SMALLINT)
+- application.agency_code joins to agency.agency_code (both SMALLINT)
+- application.action_taken joins to action_taken.action_taken (both SMALLINT)
+- application.state_code joins to state.state_code (both SMALLINT)
+- application.county_code joins to county.county_code (both INTEGER)
 
-Write ONLY the SQL query, nothing else. Start with SELECT and do not end with semicolon.
-
-SQL:"""
+Important notes:
+- loan_amount_000s and applicant_income_000s are in thousands (e.g., 200 = $200,000)
+- Lookup tables have _name columns for readable names
+- JOIN on code columns (SMALLINT/INTEGER), not name columns (TEXT)
+- Only JOIN if you need readable names, otherwise just use application table<|end|>
+<|user|>
+{question}<|end|>
+<|assistant|>
+SELECT"""
 
     print("  Generating SQL query...", flush=True)
+    print(f"  [DEBUG] Prompt length: {len(prompt)} chars", flush=True)
 
     # Generate response
     output = llm(
         prompt,
         max_tokens=200,
-        temperature=0.1,
-        stop=[";", "\n\n"],
+        temperature=0.2,
+        stop=["<|end|>", ";", "===", "reply:", "To find", "This query", "The above"],
     )
 
     response_text = output['choices'][0]['text'].strip()
 
-    # Extract SQL query (take first line that starts with SELECT)
-    lines = response_text.split('\n')
-    for line in lines:
-        if line.strip().upper().startswith('SELECT'):
-            return line.strip()
+    # Debug output
+    print(f"  [DEBUG] Raw: '{response_text}'", flush=True)
 
-    # If no SELECT found, return the whole response
-    return response_text.strip()
+    if not response_text:
+        print("  [WARNING] Empty response", flush=True)
+        return "SELECT COUNT(*) FROM application"
+
+    # Clean up response - remove any trailing explanations
+    # Split on common separators
+    for separator in ['\n\n', '===', 'reply:', 'To find', 'This query', 'The above', 'Note:']:
+        if separator in response_text:
+            response_text = response_text.split(separator)[0].strip()
+
+    # Clean up response
+    if not response_text.upper().startswith('SELECT'):
+        response_text = 'SELECT ' + response_text
+
+    # Add semicolon back if needed for execution
+    if not response_text.endswith(';'):
+        response_text = response_text + ';'
+
+    # Join multi-line to single line
+    response_text = ' '.join(response_text.split())
+
+    # Remove the semicolon we just added (SSH script doesn't need it)
+    if response_text.endswith(';'):
+        response_text = response_text[:-1].strip()
+
+    return response_text if response_text else "SELECT COUNT(*) FROM application"
 
 def execute_query_via_ssh(ssh_client, sql_query):
     """Execute SQL query on ilab via SSH"""
@@ -172,8 +214,8 @@ def main():
             # Get user question
             question = input("Your question: ").strip()
 
-            # Check for exit
-            if question.lower() == "exit":
+            # Check for exit - must be exact string "exit"
+            if question == "exit":
                 print("\nGoodbye!")
                 break
 

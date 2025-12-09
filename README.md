@@ -3,40 +3,34 @@
 Natural language interface for querying mortgage loan database using a local LLM.
 
 ## Team Members
-- Person 1: [Your name] - ilab script, database connection
-- Person 2: [Their name] - LLM setup, integration
+- **aas517**: Database setup on ilab, ilab_script.py development, schema creation, database access management
+- **mjm857**: Local LLM setup, prompt engineering, SSH tunnel integration, testing
 
-## Files
-- `ilab_script.py` - Runs on ilab, executes SQL queries on postgres database
-- `database_llm.py` - Main program, runs locally with LLM
-- `schema.sql` - Database schema fed to LLM
-- `test_llm.py` - Test script for LLM
+## Contributions
+- **aas517**: Created and deployed ilab_script.py on ilab server, set up PostgreSQL database with mortgage data from Project 1, granted database access to team member, configured GSSAPI authentication, created schema.sql file for LLM
+- **mjm857**: Set up local LLM (Phi-3 mini), implemented database_llm.py with SSH tunnel using paramiko, developed prompt engineering with Phi-3 instruct format, tested and debugged SQL generation
 
-## Setup Instructions
+## What We Found Challenging
+- Getting the LLM to generate valid SQL queries without extra explanatory text
+- Managing the 2048 token context window - had to create very concise schema summaries
+- Configuring the Phi-3 instruct format correctly with proper special tokens
+- Debugging JOIN syntax errors - LLM initially tried to join on TEXT columns instead of code columns
+- Setting up GSSAPI authentication for passwordless database access on ilab
+- Handling SSH tunnel security with getpass for password input
 
-### On ilab (Person 1)
-1. Copy `ilab_script.py` to ilab
-2. Install: `pip3 install --user --break-system-packages psycopg2-binary`
-3. Update database credentials in script
-4. Test: `python3 ilab_script.py "SELECT COUNT(*) FROM application"`
+## What We Found Interesting
+- How sensitive LLMs are to prompt format - using Phi-3's special tokens (`<|system|>`, `<|user|>`, `<|assistant|>`) made a huge difference
+- The importance of explicit foreign key relationship documentation in the prompt
+- How stop tokens affect LLM output - semicolon as a stop token prevented the model from adding explanations
+- GSSAPI authentication allowing seamless database access without password prompts on ilab
+- The trade-off between schema detail and context window limits
 
-### Locally (Person 2)
-1. Install: `pip3 install llama-cpp-python paramiko`
-2. Download LLM model to `models/` folder
-3. Test: `python3 test_llm.py`
+## Did You Do the Extra Credit?
+No, we did not implement the stdin version for extra credit.
 
-## Progress
-- [x] ilab_script.py created
-- [x] schema.sql created
-- [ ] LLM setup complete
-- [ ] SSH tunnel working
-- [ ] Full integration complete
-
-## Challenges
-(To be filled in)
-
-## Interesting Findings
-(To be filled in)
-
-## Extra Credit
-- [ ] stdin support implemented
+## Files Included
+- `database_llm.py` - Main program that runs locally with LLM
+- `ilab_script.py` - Script that runs on ilab to execute SQL queries
+- `schema.sql` - Database schema fed to the LLM
+- `SETUP_INSTRUCTIONS.md` - Detailed setup guide for team members
+- Video demonstration showing successful queries (link in submission)
