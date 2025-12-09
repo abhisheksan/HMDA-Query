@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# LLM Models (too large for git)
+models/*.gguf
+models/*.bin
+
+# Sensitive data - DO NOT COMMIT PASSWORDS
+# Note: ilab_script.py currently has hardcoded password
+# You should remove it before committing or use environment variables
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+test_output.txt
