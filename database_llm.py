@@ -70,13 +70,13 @@ Q: loan greater than income count
 A: SELECT COUNT(*) FROM application WHERE loan_amount_000s>applicant_income_000s
 
 Q: average income owner occupied
-A: SELECT AVG(a.applicant_income_000s) FROM application a JOIN owner_occupancy o ON a.owner_occupancy=o.owner_occupancy WHERE o.owner_occupancy_name LIKE '%Owner%'
+A: SELECT AVG(a.applicant_income_000s) FROM application a JOIN owner_occupancy o ON a.owner_occupancy=o.owner_occupancy WHERE o.owner_occupancy_name ILIKE '%owner%'
 
 Q: most common denial reason
 A: SELECT d.denial_reason_name,COUNT(*) FROM application a JOIN denial_reason d ON a.denial_reason_1=d.denial_reason_code GROUP BY d.denial_reason_name ORDER BY COUNT(*) DESC LIMIT 1
 
 Q: how many denied
-A: SELECT COUNT(*) FROM application a JOIN action_taken t ON a.action_taken=t.action_taken WHERE t.action_taken_name LIKE '%Denied%'<|end|>
+A: SELECT COUNT(*) FROM application a JOIN action_taken t ON a.action_taken=t.action_taken WHERE t.action_taken_name ILIKE '%denied%'<|end|>
 <|user|>
 {question}<|end|>
 <|assistant|>
