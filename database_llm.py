@@ -60,10 +60,10 @@ Key relationships:
 
 Important rules:
 - loan_amount_000s and applicant_income_000s are in thousands (e.g., 200 = $200,000)
-- Lookup tables: code columns are SMALLINT/INTEGER, _name columns are TEXT
+- _name columns only exist in lookup tables, NOT in application table
 - NEVER use subqueries
 - To compare columns in same table: use simple WHERE, no JOIN
-- To filter by _name: JOIN lookup table on code, then WHERE on _name
+- To filter by _name: MUST JOIN lookup table first, then WHERE on lookup._name
 
 Examples:
 Q: loan greater than income count
