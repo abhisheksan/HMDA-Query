@@ -44,7 +44,7 @@ def execute_query(query):
         # Create cursor
         cur = conn.cursor()
 
-        # Set search path to include your schema
+        # Set search path to include the application schema
         cur.execute("SET search_path TO aas517, public;")
 
         # Execute query

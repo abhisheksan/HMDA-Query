@@ -131,8 +131,8 @@ def execute_query_via_ssh(ssh_client, sql_query):
         # Escape single quotes in SQL query
         escaped_query = sql_query.replace("'", "'\\''")
 
-        # Build command - DB_NAME is set so script queries aas517's database
-        # User's GSSAPI credentials allow them to access it
+        # Build command - DB_NAME environment variable specifies target database
+        # GSSAPI credentials allow authenticated access
         command = f"DB_NAME=aas517 python3 {ILAB_SCRIPT_PATH} '{escaped_query}'"
 
         print("  Executing query on ilab...", flush=True)

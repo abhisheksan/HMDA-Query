@@ -1,0 +1,10 @@
+# Natural Language Database Query System - Python Dependencies
+
+# LLM Inference
+llama-cpp-python>=0.2.0
+
+# SSH Tunneling
+paramiko>=3.0.0
+
+# PostgreSQL Database Connectivity
+psycopg2-binary>=2.9.0
